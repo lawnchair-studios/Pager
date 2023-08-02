@@ -9,7 +9,6 @@ import java.util.Scanner;
 
 import pala.libs.generic.io.menus.MenuUtils;
 import pala.libs.generic.io.menus.MenuUtils.InputException;
-import pala.libs.generic.parsers.cli.CLIParams;
 import pala.libs.generic.util.FallibleSupplier;
 
 public class Pager {
@@ -22,8 +21,7 @@ public class Pager {
 				try (Socket sock = con) {
 					Scanner in = new Scanner(sock.getInputStream());
 					while (in.hasNextLine())
-						System.out.println(
-								"[" + sock.getRemoteSocketAddress() + ':' + sock.getPort() + "]: " + in.nextLine());
+						System.out.println("[" + sock.getInetAddress() + ':' + sock.getPort() + "]: " + in.nextLine());
 				} catch (IOException e) {
 					System.err.println("[IO ERR] " + e.getLocalizedMessage());
 				}
