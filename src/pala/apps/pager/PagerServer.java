@@ -9,7 +9,7 @@ import pala.libs.generic.io.menus.MenuUtils.InputException;
 public class PagerServer {
 
 	public static void main(String[] args) throws IOException {
-		int port = MenuUtils.inputValue("Enter a port (1-65535)", a -> {
+		int port = MenuUtils.inputValue("Enter a port (1-65535): ", a -> {
 			int res;
 			try {
 				res = Integer.parseInt(a);
