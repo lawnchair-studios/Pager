@@ -1,57 +1,71 @@
 package pala.apps.pager;
 
 import java.io.IOException;
-import java.net.ServerSocket;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Scanner;
 
-import pala.libs.generic.io.menus.MenuPrompter;
 import pala.libs.generic.io.menus.MenuUtils;
-import pala.libs.generic.networking.sockets.Server;
-
-import static pala.libs.generic.io.menus.MenuUtils.*;
+import pala.libs.generic.io.menus.MenuUtils.InputException;
+import pala.libs.generic.parsers.cli.CLIParams;
+import pala.libs.generic.util.FallibleSupplier;
 
 public class Pager {
 
-	public static void main(String[] args) {
-		Scanner s = MenuUtils.getDefaultScanner();
-		var mp = new MenuPrompter(s, System.out);
-
-		while (true) {
-			int res = mp.prompt("Select an option: ", "Listen for incoming messages", "Send message",
-					"Send series of messages", "Exit the program");
-			switch (res) {
-			case 1:
-				try {
-					listenForIncomingMessages();
+	public static void pagerApp(FallibleSupplier<? extends IOException, ? extends Socket> conSupp) {
+		try (Socket con = conSupp.get()) {
+			System.out.println(
+					"Connection succeeded.\nWrite a message then hit enter to send.\nMessages received will be shown automatically.");
+			Thread listener = new Thread(() -> {
+				try (Socket sock = con) {
+					Scanner in = new Scanner(sock.getInputStream());
+					while (in.hasNextLine())
+						System.out.println(
+								"[" + sock.getRemoteSocketAddress() + ':' + sock.getPort() + "]: " + in.nextLine());
 				} catch (IOException e) {
-					System.err.print(
-							"Failed to listen to incoming messages. Error message:\n\t" + e.getLocalizedMessage());
+					System.err.println("[IO ERR] " + e.getLocalizedMessage());
 				}
-				break;
-			case 2:
-				sendMessage();
-				break;
-			case 3:
-				sendMessageSeries();
-				break;
-			case 4:
-				return;
+			});
+			listener.start();
+			PrintWriter pw = new PrintWriter(con.getOutputStream());
+			while (true) {
+				String l = MenuUtils.getDefaultScanner().nextLine();
+				if (l.equalsIgnoreCase("!stop"))
+					return;
+				pw.println(l);
+				pw.flush();
 			}
+		} catch (IOException e) {
+			System.err.println("[IO ERR] " + e.getLocalizedMessage());
 		}
 	}
 
-	private static void listenForIncomingMessages() throws IOException {
-		int port = inputNumber("Enter a port: ", "That's not a number.");
+	public static void main(String[] args) {
+		var endpoint = MenuUtils.inputValue("Enter an endpoint (IP, web-address, or blank for localhost): ", a -> {
+			try {
+				return InetAddress.getByName(a);
+			} catch (UnknownHostException e) {
+				throw new InputException("Could not resolve host from provided input.");
+			}
+		});
+		int port = MenuUtils.inputValue("Enter a port (1-65535)", a -> {
+			int res;
+			try {
+				res = Integer.parseInt(a);
+			} catch (NumberFormatException e) {
+				throw new InputException("Port must be a number from 1-65535.");
+			}
+			if (res < 1 || res > 65535)
+				throw new InputException("Port must be from 1-65535.");
+			return res;
+		});
 
-		Server serv = new Server(new ServerSocket());
-	}
+		System.out.println("Connecting to " + endpoint + ':' + port + "...");
 
-	private static void sendMessage() {
-
-	}
-
-	private static void sendMessageSeries() {
-
+		while (true)
+			pagerApp(() -> new Socket(endpoint, port));
 	}
 
 }
