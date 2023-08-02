@@ -21,7 +21,8 @@ public class PagerServer {
 			return res;
 		});
 		try (ServerSocket ss = new ServerSocket(port)) {
-			System.out.println("Hosting a server on port: " + port + ".");
+			System.out.println("Hosting a server on port: " + port
+					+ ".\nSend messages by writing them then hitting enter.\nReceived messages will be written here automatically.");
 			while (true)
 				Pager.pagerApp(ss::accept);
 		}
