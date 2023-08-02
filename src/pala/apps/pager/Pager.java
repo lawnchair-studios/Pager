@@ -48,7 +48,7 @@ public class Pager {
 				throw new InputException("Could not resolve host from provided input.");
 			}
 		});
-		int port = MenuUtils.inputValue("Enter a port (1-65535)", a -> {
+		int port = MenuUtils.inputValue("Enter a port (1-65535): ", a -> {
 			int res;
 			try {
 				res = Integer.parseInt(a);
